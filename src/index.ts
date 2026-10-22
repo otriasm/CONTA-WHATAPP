@@ -2,6 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { ClaudeFiscalReader } from './adapters/ai/claudeReader.js';
+import { CsfFirstReader } from './adapters/csf/csfFirstReader.js';
 import { FacturapiClient } from './adapters/facturapi/client.js';
 import { FacturapiError } from './adapters/facturapi/errors.js';
 import { MemoryStore } from './adapters/memory/store.js';
@@ -80,7 +81,7 @@ const orchestrator = new Orchestrator(
   store,
   wa,
   new FacturapiClient({ baseUrl: cfg.FACTURAPI_BASE_URL }),
-  new ClaudeFiscalReader(),
+  new CsfFirstReader(new ClaudeFiscalReader(), undefined, (code) => console.warn('csf_lector_respaldo_ia', code)),
   {
     // Bóveda: en desarrollo, la referencia es el nombre de una variable de entorno.
     async facturapiKey(ref) {

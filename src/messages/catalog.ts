@@ -8,6 +8,10 @@ export const MESSAGES = {
   receptorConocido: '¿Facturo con los datos de {nombre}?',
   // B2 · CSF leída
   datosLeidos: 'Leí tu constancia:\nRFC: {rfc}\nNombre: {nombre}\nCP: {cp}\nRégimen: {regimen}\n¿Son correctos?',
+  eligeRegimen: 'Tu constancia tiene varios regímenes vigentes:\n{regimenes}\n¿Con cuál facturo?',
+  csfProtegida: 'Tu constancia tiene contraseña. Descárgala otra vez del SAT y mándamela sin contraseña.',
+  csfInactiva:
+    'Tu constancia dice que tu RFC no está activo en el SAT, así que no puedo facturarte. Revisa tu situación en el SAT o escríbele al negocio.',
   pideTicket: 'Listo, tus datos coinciden con el SAT. Ahora mándame una foto de tu ticket.',
   // B4 · resumen
   resumen:

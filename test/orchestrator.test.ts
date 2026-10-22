@@ -154,6 +154,39 @@ describe('Receptor: casos alternos', () => {
     expect(t.sink.events.find((e) => e.nombre === 'validacion_sat_rechazada')).toMatchObject({ intento_n: 1 });
   });
 
+  it('varios regímenes vigentes: el receptor elige con cuál se factura', async () => {
+    const t = setup();
+    t.reader.csf = { ...t.reader.csf, taxSystem: '605', taxSystems: ['605', '626'] };
+    await t.client.text('quiero factura');
+    t.wa.take();
+    await t.client.file('application/pdf');
+    const ask = t.wa.take()[0]!;
+    expect(texts([ask])[0]).toContain('varios regímenes vigentes');
+    const req = [...t.store.requests.values()][0]!;
+    expect(ask).toMatchObject({
+      buttons: [
+        { id: `regimen:${req.id}:605`, title: '605 Sueldos' },
+        { id: `regimen:${req.id}:626`, title: '626 RESICO' },
+      ],
+    });
+
+    await t.client.button(`regimen:${req.id}:626`);
+    const card = t.wa.take()[0]!;
+    expect(texts([card])[0]).toContain('Régimen: 626 · Régimen Simplificado de Confianza');
+    await t.client.button(`datos_ok:${req.id}`);
+    expect(t.facturapi.customers.get('cus_1')?.taxSystem).toBe('626');
+  });
+
+  it('una constancia de un RFC inactivo no sigue adelante', async () => {
+    const t = setup();
+    t.reader.csf = { ...t.reader.csf, rejection: 'contribuyente_inactivo' };
+    await t.client.text('quiero factura');
+    t.wa.take();
+    await t.client.file('application/pdf');
+    expect(texts(t.wa.take())).toEqual([MESSAGES.csfInactiva]);
+    expect(t.facturapi.customers.size).toBe(0);
+  });
+
   it('ER19: un Excel en lugar de la foto del ticket', async () => {
     const t = setup();
     await t.client.text('quiero factura');

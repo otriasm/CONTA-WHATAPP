@@ -120,8 +120,10 @@ export class FakeReader implements FiscalReader {
     legalName: FISCAL.legalName,
     zip: FISCAL.zip,
     taxSystem: FISCAL.taxSystem,
+    taxSystems: [FISCAL.taxSystem],
     pagesRead: 2,
     confidence: 0.95,
+    source: 'ia',
   };
   ticket: TicketReading = {
     total: 350,

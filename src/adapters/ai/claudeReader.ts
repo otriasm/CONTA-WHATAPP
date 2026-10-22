@@ -16,7 +16,7 @@ const CsfSchema = z.object({
   rfc: z.string().nullable(),
   legal_name: z.string().nullable(),
   zip: z.string().nullable(),
-  tax_system_code: z.string().nullable(),
+  tax_system_codes: z.array(z.string()),
   pages_read: z.number().int(),
   confidence: z.number(),
 });
@@ -35,7 +35,7 @@ Extrae solo:
 - rfc: el RFC tal como aparece.
 - legal_name: nombre o razón social, en mayúsculas y sin régimen de capital (sin «SA DE CV»).
 - zip: código postal del domicilio fiscal, 5 dígitos.
-- tax_system_code: la clave de 3 dígitos del régimen vigente (por ejemplo 605, 612, 626). El régimen suele venir en la página 2; si esa página no está, devuelve null.
+- tax_system_codes: las claves de 3 dígitos de los regímenes vigentes (sin fecha de fin), por ejemplo ["605"] o ["612", "626"]. Los regímenes suelen venir en la página 2; si esa página no está, devuelve una lista vacía.
 - pages_read: cuántas páginas de la constancia recibiste.
 - confidence: de 0 a 1, qué tan seguro estás de los cuatro datos.
 No extraigas CURP, domicilio completo ni idCIF. Si un dato no se ve, devuelve null; no lo adivines.`;
@@ -93,14 +93,19 @@ export class ClaudeFiscalReader implements FiscalReader {
       },
       { type: 'text', text: CSF_PROMPT },
     ]);
-    if (!parsed) return { rfc: null, legalName: null, zip: null, taxSystem: null, pagesRead: 0, confidence: 0 };
+    if (!parsed) {
+      return { rfc: null, legalName: null, zip: null, taxSystem: null, taxSystems: [], pagesRead: 0, confidence: 0, source: 'ia' };
+    }
+    const taxSystems = parsed.tax_system_codes.filter((c) => /^\d{3}$/.test(c));
     return {
       rfc: parsed.rfc,
       legalName: parsed.legal_name,
       zip: parsed.zip,
-      taxSystem: parsed.tax_system_code,
+      taxSystem: taxSystems[0] ?? null,
+      taxSystems,
       pagesRead: parsed.pages_read,
       confidence: clamp(parsed.confidence),
+      source: 'ia',
     };
   }
 

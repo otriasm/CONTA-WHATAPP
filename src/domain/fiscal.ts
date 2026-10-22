@@ -74,6 +74,33 @@ export function taxSystemName(code: string): string | undefined {
   return TAX_SYSTEMS.find((t) => t.code === code)?.name;
 }
 
+const SHORT_NAMES: Record<string, string> = {
+  '601': 'General PM',
+  '603': 'No lucrativas',
+  '605': 'Sueldos',
+  '606': 'Arrendamiento',
+  '607': 'Enajenación',
+  '608': 'Demás ingresos',
+  '610': 'Extranjero',
+  '611': 'Dividendos',
+  '612': 'Empresarial',
+  '614': 'Intereses',
+  '615': 'Premios',
+  '616': 'Sin obligaciones',
+  '620': 'Cooperativas',
+  '621': 'RIF',
+  '622': 'Agropecuario',
+  '623': 'Grupos',
+  '624': 'Coordinados',
+  '625': 'Plataformas',
+  '626': 'RESICO',
+};
+
+/** Nombre corto para un botón de WhatsApp (máx. 20 caracteres con la clave). */
+export function taxSystemShortName(code: string): string {
+  return SHORT_NAMES[code] ?? '';
+}
+
 /** Regímenes que puede tener un RFC según sea persona física o moral (ER17). */
 export function taxSystemsFor(rfc: string): TaxSystem[] {
   const type = personType(rfc);

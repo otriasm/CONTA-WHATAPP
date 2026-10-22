@@ -12,6 +12,7 @@ import {
   isTaxSystemAllowedForRfc,
   itemTaxes,
   taxSystemName,
+  taxSystemShortName,
   taxSystemsFor,
 } from '../domain/fiscal.js';
 import { isValidRfc, isValidZip, normalizeRfc } from '../domain/rfc.js';
@@ -20,6 +21,7 @@ import type { Business, FiscalData, InvoiceRequest, Receptor, TicketData } from 
 import { describeMime, formatDate, formatMoney, render, type MessageKey } from '../messages/catalog.js';
 import type {
   Clock,
+  CsfRejection,
   FacturapiPort,
   FiscalReader,
   IdGenerator,
@@ -206,8 +208,13 @@ export class Orchestrator {
     if (msg.kind === 'media') return this.readCsf(ctx, req, msg);
 
     if (msg.kind === 'button') {
-      const [action, reqId] = msg.payload.split(':');
+      const [action, reqId, code] = msg.payload.split(':');
       if (reqId !== req.id) return;
+      if (action === 'regimen' && code && req.pendingFiscal && isTaxSystemAllowedForRfc(code, req.pendingFiscal.rfc)) {
+        req.pendingFiscal = { ...req.pendingFiscal, taxSystem: code };
+        await this.store.saveRequest(req);
+        return this.sendFiscalCard(business, receptor, req, req.pendingFiscal);
+      }
       if ((action === 'datos_ok' || action === 'conocido_si') && req.pendingFiscal) {
         return this.validateFiscal(ctx, req, req.pendingFiscal);
       }
@@ -256,8 +263,15 @@ export class Orchestrator {
     await this.track('csf_leida', business, req, receptor, 'B2', {
       campos_leidos: fieldsRead,
       paginas: reading.pagesRead,
+      origen_lectura: reading.source,
+      regimenes_vigentes: reading.taxSystems.length,
+      rechazo: reading.rejection ?? null,
     });
 
+    if (reading.rejection) {
+      await this.store.saveRequest(req);
+      return this.say(business, receptor.phone, CSF_REJECTION_MESSAGES[reading.rejection]);
+    }
     if (!reading.taxSystem && reading.rfc) {
       await this.store.saveRequest(req);
       return this.say(business, receptor.phone, 'ER13');
@@ -275,7 +289,27 @@ export class Orchestrator {
     };
     req.pendingFiscal = fiscal;
     req.state = 'confirmando_datos';
+
+    // Varios regímenes vigentes: el receptor elige con cuál se factura; no adivinamos.
+    const options = reading.taxSystems.filter((code) => isTaxSystemAllowedForRfc(code, fiscal.rfc));
+    if (options.length > 1) {
+      await this.store.saveRequest(req);
+      if (options.length > 3) return this.sendFiscalForm(business, receptor, req, { ...fiscal, taxSystem: '' });
+      return this.wa.sendButtons(
+        business.waPhoneNumberId,
+        receptor.phone,
+        render('eligeRegimen', {
+          regimenes: options.map((c) => `• ${c} · ${taxSystemName(c) ?? ''}`).join('\n'),
+        }),
+        options.map((code) => ({ id: `regimen:${req.id}:${code}`, title: `${code} ${taxSystemShortName(code)}` })),
+      );
+    }
+
     await this.store.saveRequest(req);
+    return this.sendFiscalCard(business, receptor, req, fiscal);
+  }
+
+  private sendFiscalCard(business: Business, receptor: Receptor, req: InvoiceRequest, fiscal: FiscalData) {
     return this.wa.sendButtons(
       business.waPhoneNumberId,
       receptor.phone,
@@ -914,6 +948,12 @@ const APPROVAL_REASONS: Record<NonNullable<InvoiceRequest['approvalReason']>, st
   folio_repetido: 'ese folio ya se facturó',
   csd_vencido: 'el CSD está vencido',
   captura_manual: 'el cliente escribió el total a mano',
+};
+
+const CSF_REJECTION_MESSAGES: Record<CsfRejection, MessageKey> = {
+  protegida: 'csfProtegida',
+  contribuyente_inactivo: 'csfInactiva',
+  sin_regimen: 'ER13',
 };
 
 function satErrorMessage(error: SatValidationError): MessageKey {

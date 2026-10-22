@@ -7,7 +7,7 @@ El cliente de un negocio pide su factura CFDI 4.0 en el WhatsApp de ese negocio.
 | Pantalla | Qué hace | Dónde |
 | --- | --- | --- |
 | B1 | Entiende «quiero factura», abre una solicitud y manda el aviso de privacidad | `orchestrator.ts` · `claudeReader.ts` |
-| B2 | Lee la CSF en PDF con IA de visión y muestra los 4 datos con 2 botones | `readCsf` |
+| B2 | Lee la CSF en PDF con `fiscalapi-csf` (sin IA) y, si no se puede, con IA de visión. Muestra los 4 datos con 2 botones; si hay varios regímenes vigentes, el cliente elige | `csfFirstReader.ts` · `readCsf` |
 | B3 · D2 | WhatsApp Flow «Tus datos fiscales». Valida el RFC, el CP y el régimen y luego los compara con el SAT | `sendFiscalForm` · `validateFiscal` |
 | B4 | Lee la foto del ticket y aplica la regla de emisión: modo, máximo, antigüedad y folio repetido | `readTicket` · `domain/rules.ts` |
 | B5 | Timbra con `idempotency_key` y manda el PDF y el XML. Fuera de la ventana de 24 h usa una plantilla | `stamp` · `deliver` |
@@ -27,8 +27,9 @@ src/
   ports.ts         Contratos con WhatsApp, Facturapi, IA, datos, bóveda y cola.
   adapters/
     whatsapp/      Cloud API: firma del webhook, normalización y envío (texto, botones, documentos, Flows, plantillas).
-    facturapi/     API v2: clientes con validación del SAT, facturas, PDF/XML y firma de webhooks.
-    ai/            Claude con visión y salida estructurada (Zod). Nunca timbra ni inventa montos.
+    facturapi/     SDK oficial `facturapi`: clientes con validación del SAT, facturas, PDF/XML y firma de webhooks.
+    csf/           `fiscalapi-csf`: lector determinista de la CSF. Descarta CURP, idCIF y domicilio.
+    ai/            Claude con visión y salida estructurada (Zod): tickets, intención y CSF de respaldo. Nunca inventa montos.
     memory/        Store en memoria para desarrollo y pruebas.
   analytics/       Eventos del diccionario de tagueo, sin datos personales.
   http/            Fastify: /webhooks/whatsapp, /webhooks/facturapi, /health y la cola con reintentos.
@@ -39,7 +40,7 @@ db/migrations/     Esquema de Postgres con las tablas del lienzo.
 
 ```bash
 npm install
-npm test           # 52 pruebas, sin red
+npm test           # 65 pruebas, sin red
 npm run typecheck
 cp .env.example .env   # llena las variables
 npm run dev

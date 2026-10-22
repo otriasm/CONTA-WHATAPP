@@ -108,10 +108,22 @@ export interface CsfReading {
   rfc: string | null;
   legalName: string | null;
   zip: string | null;
+  /** Régimen principal: el único vigente, o el primero si hay varios. */
   taxSystem: string | null;
+  /** Todos los regímenes vigentes (si hay más de uno, el receptor elige). */
+  taxSystems: string[];
   pagesRead: number;
   confidence: number;
+  /** Quién leyó la constancia: el lector determinista o la IA de respaldo. */
+  source: 'lector_csf' | 'ia';
+  /** La constancia no sirve para facturar y no vale la pena intentar con IA. */
+  rejection?: CsfRejection;
 }
+
+export type CsfRejection =
+  | 'protegida' // PDF con contraseña
+  | 'contribuyente_inactivo' // estatus distinto de ACTIVO o REACTIVADO
+  | 'sin_regimen'; // falta la página de regímenes (ER13)
 
 export interface TicketReading {
   total: number | null;
