@@ -46,7 +46,7 @@ cp .env.example .env   # llena las variables
 npm run dev
 ```
 
-Para probar con WhatsApp real:
+Guía paso a paso para la primera prueba con WhatsApp real: [`docs/primera-prueba.md`](docs/primera-prueba.md). En resumen:
 
 1. Crea en Meta un número de prueba para el negocio y otro para Conta Operación.
 2. Publica los dos Flows («Tus datos fiscales» y «Corregir campo») y la plantilla de utilidad `tu_factura_lista`, con un documento en el encabezado.

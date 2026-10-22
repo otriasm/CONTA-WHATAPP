@@ -8,11 +8,12 @@ import { FacturapiError } from './adapters/facturapi/errors.js';
 import { MemoryStore } from './adapters/memory/store.js';
 import { WhatsAppCloudClient, WhatsAppApiError } from './adapters/whatsapp/client.js';
 import { Analytics, ConsoleSink } from './analytics/events.js';
-import { loadConfig } from './config.js';
+import { loadConfig, loadDotEnv } from './config.js';
 import { buildApp } from './http/app.js';
 import { RetryQueue } from './http/queue.js';
 import { Orchestrator } from './orchestrator/orchestrator.js';
 
+loadDotEnv();
 const cfg = loadConfig();
 const store = new MemoryStore();
 

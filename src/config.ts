@@ -36,6 +36,15 @@ const Env = z.object({
 
 export type Config = z.infer<typeof Env>;
 
+/** Carga `.env` si existe (Node 22 lo trae integrado); las variables ya definidas no se pisan. */
+export function loadDotEnv(path = '.env'): void {
+  try {
+    process.loadEnvFile(path);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = Env.safeParse(env);
   if (!parsed.success) {
