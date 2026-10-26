@@ -54,10 +54,8 @@ Meta: escribirle «quiero factura» al número de prueba desde tu celular y que 
 4. Abre la terminal y escribe, uno por uno:
 
 ```bash
-git clone https://github.com/otriasm/Cuenta-Remunerada.git
-cd Cuenta-Remunerada
-git checkout claude/modest-hamilton-TmVY4
-cd conta-whatsapp
+git clone https://github.com/otriasm/conta-whatapp.git
+cd conta-whatapp
 npm install
 ```
 
@@ -73,7 +71,7 @@ npm install
 
 ## Paso 6 · Prender el programa
 
-En la terminal, dentro de `conta-whatsapp`:
+En la terminal, dentro de `conta-whatapp`:
 
 ```bash
 npm run dev
